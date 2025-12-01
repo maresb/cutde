@@ -14,6 +14,7 @@ try:
         raise ImportError
 
     from cutde.cuda import (  # noqa: F401
+        clear_gpu_memory,
         empty,
         get,
         load_module,
@@ -28,6 +29,7 @@ except ImportError:
         if os.environ.get("CUTDE_USE_BACKEND", "opencl") != "opencl":
             raise ImportError
         from cutde.opencl import (  # noqa: F401
+            clear_gpu_memory,
             empty,
             get,
             load_module,
@@ -40,6 +42,7 @@ except ImportError:
 
     except ImportError:
         from cutde.cpp import (  # noqa: F401
+            clear_gpu_memory,
             empty,
             get,
             load_module,

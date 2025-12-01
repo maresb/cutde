@@ -1,3 +1,4 @@
+import gc
 from math import ceil
 
 import numpy as np
@@ -177,4 +178,29 @@ def call_clu_aca(
                 ptrs[:, None] + np.arange(n_rows[i], n_rows[i] + n_cols[i])[None, :]
             ]
             appxs.append((us.T, vs))
+
+        # Explicitly delete GPU arrays to free GPU memory between chunks.
+        # This helps prevent GPU memory accumulation in long-running applications
+        # or when processing many chunks.
+        del gpu_buffer
+        del gpu_fworkspace
+        del gpu_fworkspace_starts
+        del gpu_uv_ptrs_starts
+        del gpu_uv_ptrs
+        del gpu_iworkspace
+        del gpu_n_terms
+        del gpu_next_ptr
+        del gpu_Iref0
+        del gpu_Jref0
+        del gpu_obs_pts
+        del gpu_tris
+        del gpu_obs_start
+        del gpu_obs_end
+        del gpu_src_start
+        del gpu_src_end
+        del gpu_tol
+        del gpu_max_iter
+        # Trigger garbage collection to release GPU memory promptly
+        gc.collect()
+
     return appxs

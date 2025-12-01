@@ -7,6 +7,10 @@ logger = logging.getLogger(__name__)
 
 gpu_module = dict()
 
+# Cache for TemplateLookup objects to avoid recreating them on every call.
+# Keyed by frozenset of template directories.
+_template_lookup_cache = dict()
+
 
 def compare(a, b):
     if isinstance(a, type(b)):
@@ -44,13 +48,55 @@ def get_existing_module(tmpl_name, tmpl_args):
     return None
 
 
+def clear_module_cache():
+    """
+    Clear the cached GPU modules to free memory.
+
+    This function clears the module cache, allowing GPU memory and compiled
+    kernels to be garbage collected. Call this function when you want to
+    release GPU resources, for example at the end of a computation or when
+    switching between different configurations.
+    """
+    gpu_module.clear()
+    logger.debug("Cleared GPU module cache")
+
+
+def clear_template_cache():
+    """
+    Clear the cached Mako template lookups to free memory.
+
+    This function clears the template lookup cache. This is primarily useful
+    for testing or when template files may have changed on disk.
+    """
+    _template_lookup_cache.clear()
+    logger.debug("Cleared template lookup cache")
+
+
+def clear_all_caches():
+    """
+    Clear all cached resources (GPU modules and templates) to free memory.
+
+    This is a convenience function that calls both clear_module_cache() and
+    clear_template_cache().
+    """
+    clear_module_cache()
+    clear_template_cache()
+
+
 def get_template(tmpl_name, tmpl_dir):
     import mako.lookup
 
     template_dirs = [os.getcwd()]
     if tmpl_dir is not None:
         template_dirs.append(tmpl_dir)
-    lookup = mako.lookup.TemplateLookup(directories=template_dirs)
+
+    # Use a frozenset of directories as cache key
+    cache_key = frozenset(template_dirs)
+    if cache_key not in _template_lookup_cache:
+        _template_lookup_cache[cache_key] = mako.lookup.TemplateLookup(
+            directories=template_dirs
+        )
+    lookup = _template_lookup_cache[cache_key]
     return lookup.get_template(tmpl_name)
 
 
