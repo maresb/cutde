@@ -4,6 +4,7 @@ import pycuda
 import pycuda.compiler
 import pycuda.gpuarray
 
+from .gpu_backend import clear_all_caches as _clear_backend_caches
 from .gpu_backend import load
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,21 @@ def ensure_initialized():
             pycuda._driver.device_attribute.MULTI_GPU_BOARD_GROUP_ID
         )
         logger.info("Initialized CUDA on gpu: " + str(gpu_idx))
+
+
+def clear_gpu_memory():
+    """
+    Clear cached GPU modules and force garbage collection to free GPU memory.
+
+    This function clears the module cache and explicitly triggers Python's
+    garbage collector to help release GPU memory held by unreferenced arrays.
+    Call this when you want to free GPU memory between computations.
+    """
+    import gc
+
+    _clear_backend_caches()
+    gc.collect()
+    logger.debug("Cleared GPU memory caches and triggered garbage collection")
 
 
 def ptr(arr):

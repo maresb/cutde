@@ -5,6 +5,7 @@ import warnings
 import pyopencl
 import pyopencl.array
 
+from .gpu_backend import clear_all_caches as _clear_backend_caches
 from .gpu_backend import load
 
 logger = logging.getLogger(__name__)
@@ -12,6 +13,24 @@ logger = logging.getLogger(__name__)
 gpu_initialized = False
 gpu_ctx = None
 gpu_queue = None
+
+
+def clear_gpu_memory():
+    """
+    Clear cached GPU modules and force garbage collection to free GPU memory.
+
+    This function clears the module cache, finishes any pending OpenCL commands,
+    and explicitly triggers Python's garbage collector to help release GPU memory
+    held by unreferenced arrays. Call this when you want to free GPU memory
+    between computations.
+    """
+    import gc
+
+    if gpu_queue is not None:
+        gpu_queue.finish()
+    _clear_backend_caches()
+    gc.collect()
+    logger.debug("Cleared GPU memory caches and triggered garbage collection")
 
 
 def report_devices(ctx):
